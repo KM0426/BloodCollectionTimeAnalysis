@@ -27,12 +27,15 @@ namespace BloodCTA
 
             if (ofd.ShowDialog() == DialogResult.OK)
             {
-                Console.WriteLine("Select File：" + ofd.FileName);
+                Console.WriteLine(ofd.FileName);
                 Console.WriteLine("ファイルを読み込んでいます、お待ちください。。。");
+                Console.WriteLine("");
                 Console.WriteLine("※抽出条件");
                 Console.WriteLine("採血受付日時(時刻1)と患者認証(時刻2)が同日である");
                 Console.WriteLine("患者認証(時刻2)が7時～17時の間");
-                Console.WriteLine("が7時～17時の間");
+                Console.WriteLine("同日中にPIDが重複している場合は、時間が早い方のみ選択");
+                Console.WriteLine("");
+
                 try
                 {
                     XLWorkbook workbook = new XLWorkbook(ofd.FileName);
@@ -44,7 +47,7 @@ namespace BloodCTA
                     for (int i = 2; i <= lastRow; i++)
                     {
                         Console.Write(bars[i % 4]);
-                        Console.Write("{0, 4:d0}%", 100 * (i + 1) / lastRow);
+                        Console.Write("解析中..."+"{0, 4:d0}%", 100 * (i + 1) / lastRow);
                         Console.SetCursorPosition(0, Console.CursorTop);
 
                         IXLCell cell = worksheet.Cell(i, 1);
@@ -54,8 +57,13 @@ namespace BloodCTA
                         if (!DateTime.TryParse(worksheet.Cell(i, 2).Value.ToString(), out dt1)) continue;
                         if (!DateTime.TryParse(worksheet.Cell(i, 3).Value.ToString(), out dt2)) continue;
                         rowDatas.Add(new RowData() { pID = pid, dateTime1 = dt1, dateTime2 = dt2 });
+                        
+                        cell = null;
 
                     }
+                    worksheet = null;
+                    workbook.Dispose();
+
                     Console.CursorVisible = true;
                     var gps = rowDatas.OrderBy(o => o.dateTime1).Where(w => w.dateTime1.Day == w.dateTime2.Day && w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).ToList();
                     var gpd = gps.GroupBy(g => g.dateTime1.Year + "/"+g.dateTime1.Month + "/" + g.dateTime1.Day);
@@ -84,6 +92,10 @@ namespace BloodCTA
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         Console.WriteLine($"{Function.DoWeekName(item.Key)},{item.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
                     }
+
+                    rowDatas = null;
+                    rowDatas2 = null;
+
                     Console.WriteLine("");
                     Console.WriteLine("完了しました、出力をコピーしてExcelに貼り付けてください");
                     Console.WriteLine("終了するには何かキーを押してください");
