@@ -21,14 +21,18 @@ namespace BloodCTA
                 + "すべてのファイル (*.*)|*.*";
             ofd.FilterIndex = 2;
             ofd.Multiselect = false;
+            Console.WriteLine("※抽出要件");
+            Console.WriteLine("エクセルファイルの最終シートを読み込みます");
+            Console.WriteLine("1～3列に関して、PID,採血受付日時(時刻1),患者認証(時刻2)である事");
 
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 Console.WriteLine("Select File：" + ofd.FileName);
                 Console.WriteLine("ファイルを読み込んでいます、お待ちください。。。");
                 Console.WriteLine("※抽出条件");
-                Console.WriteLine("PID	採血受付日時(時刻1)	患者認証(時刻2)");
-                Console.WriteLine("※抽出条件");
+                Console.WriteLine("採血受付日時(時刻1)と患者認証(時刻2)が同日である");
+                Console.WriteLine("患者認証(時刻2)が7時～17時の間");
+                Console.WriteLine("が7時～17時の間");
                 try
                 {
                     XLWorkbook workbook = new XLWorkbook(ofd.FileName);
@@ -53,20 +57,23 @@ namespace BloodCTA
 
                     }
                     Console.CursorVisible = true;
-                    var gps = rowDatas.OrderBy(o => o.dateTime1).Where(w => w.dateTime1.Day == w.dateTime2.Day && w.dateTime1.Hour >= 7 && w.dateTime1.Hour <= 17).GroupBy(g => g.pID).Select(s => s.First()).ToList();
-                    var gpd = gps.GroupBy(g => g.dateTime1.Month + "/" + g.dateTime1.Day);
+                    var gps = rowDatas.OrderBy(o => o.dateTime1).Where(w => w.dateTime1.Day == w.dateTime2.Day && w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).ToList();
+                    var gpd = gps.GroupBy(g => g.dateTime1.Year + "/"+g.dateTime1.Month + "/" + g.dateTime1.Day);
 
                     Console.WriteLine($"日付,曜日,総数,平均値,中央値");
+                    List<RowData> rowDatas2 = new List<RowData>();
                     foreach (var item in gpd)
                     {
-                        var wtime = item.Select(s => s.waitTime.TotalMilliseconds);
-                        var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime));
-                        var five = Statistics.FiveNumberSummary(wtime);
+                        var wtime = item.GroupBy(g => g.pID).Select(s => s.First()).ToList();
+                        rowDatas2.AddRange(wtime);
+                        var wtime2 = wtime.Select(s => s.waitTime.TotalMilliseconds);
+                        var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime2));
+                        var five = Statistics.FiveNumberSummary(wtime2);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
-                        Console.WriteLine($"{item.Key},{Function.DoWeekName(item.First().dateTime1.DayOfWeek)},{item.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
+                        Console.WriteLine($"{item.Key},{Function.DoWeekName(item.First().dateTime1.DayOfWeek)},{wtime2.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
                     }
-                    var gpw = gps.GroupBy(g => g.dateTime1.DayOfWeek);
-
+                    var gpw = rowDatas2.GroupBy(g=>g.dateTime1.DayOfWeek).OrderBy(o=>o.Key);
+                   
                     Console.WriteLine("");
                     Console.WriteLine($"曜日,総数,平均値,中央値");
                     foreach (var item in gpw)
