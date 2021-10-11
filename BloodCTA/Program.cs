@@ -23,7 +23,7 @@ namespace BloodCTA
             ofd.Multiselect = false;
             Console.WriteLine("※抽出要件");
             Console.WriteLine("エクセルファイルの最終シートを読み込みます");
-            Console.WriteLine("1～3列に関して、PID,採血受付日時(時刻1),患者認証(時刻2)である事");
+            Console.WriteLine("A～C列に関して、PID,採血受付日時(時刻1),患者認証(時刻2)である事");
 
             if (ofd.ShowDialog() == DialogResult.OK)
             {
@@ -38,37 +38,43 @@ namespace BloodCTA
 
                 try
                 {
-                    XLWorkbook workbook = new XLWorkbook(ofd.FileName);
-                    IXLWorksheet worksheet = workbook.Worksheets.Last();
-                    int lastRow = worksheet.LastRowUsed().RowNumber();
-                    Console.CursorVisible = false;
-                    char[] bars = { '／', '―', '＼', '｜' };
                     List<RowData> rowDatas = new List<RowData>();
-                    for (int i = 2; i <= lastRow; i++)
+                    using (XLWorkbook workbook = new XLWorkbook(ofd.FileName))
                     {
-                        Console.Write(bars[i % 4]);
-                        Console.Write("解析中..."+"{0, 4:d0}%", 100 * (i + 1) / lastRow);
-                        Console.SetCursorPosition(0, Console.CursorTop);
-
-                        IXLCell cell = worksheet.Cell(i, 1);
-                        double pid = (double)cell.Value;
-                        DateTime dt1;
-                        DateTime dt2;
-                        if (!DateTime.TryParse(worksheet.Cell(i, 2).Value.ToString(), out dt1)) continue;
-                        if (!DateTime.TryParse(worksheet.Cell(i, 3).Value.ToString(), out dt2)) continue;
-                        rowDatas.Add(new RowData() { pID = pid, dateTime1 = dt1, dateTime2 = dt2 });
+                        IXLWorksheet worksheet = workbook.Worksheets.Last();
+                        int lastRow = worksheet.LastRowUsed().RowNumber();
+                        Console.CursorVisible = false;
+                        char[] bars = { '／', '―', '＼', '｜' };
                         
-                        cell = null;
+                        for (int i = 2; i <= lastRow; i++)
+                        {
+                            Console.Write(bars[i % 4]);
+                            Console.Write("解析中..." + "{0, 4:d0}%", 100 * (i + 1) / lastRow);
+                            Console.SetCursorPosition(0, Console.CursorTop);
 
+                            IXLCell cell = worksheet.Cell(i, 1);
+                            double pid = (double)cell.Value;
+                            DateTime dt1;
+                            DateTime dt2;
+                            if (!DateTime.TryParse(worksheet.Cell(i, 2).Value.ToString(), out dt1)) continue;
+                            if (!DateTime.TryParse(worksheet.Cell(i, 3).Value.ToString(), out dt2)) continue;
+                            rowDatas.Add(new RowData() { pID = pid, dateTime1 = dt1, dateTime2 = dt2 });
+
+                            cell = null;
+
+                        }
+                        worksheet = null;
+                        workbook.Dispose();
                     }
-                    worksheet = null;
-                    workbook.Dispose();
+
 
                     Console.CursorVisible = true;
                     var gps = rowDatas.OrderBy(o => o.dateTime1).Where(w => w.dateTime1.Day == w.dateTime2.Day && w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).ToList();
                     var gpd = gps.GroupBy(g => g.dateTime1.Year + "/"+g.dateTime1.Month + "/" + g.dateTime1.Day);
-
-                    Console.WriteLine($"日付,曜日,総数,平均値,中央値");
+                    Console.WriteLine("解析完了！！" + "{0, 4:d0}%", 100);
+                    Console.WriteLine("");
+                    Console.WriteLine($"日付別");
+                    Console.WriteLine($",,総数,平均値,中央値");
                     List<RowData> rowDatas2 = new List<RowData>();
                     foreach (var item in gpd)
                     {
@@ -83,7 +89,8 @@ namespace BloodCTA
                     var gpw = rowDatas2.GroupBy(g=>g.dateTime1.DayOfWeek).OrderBy(o=>o.Key);
                    
                     Console.WriteLine("");
-                    Console.WriteLine($"曜日,総数,平均値,中央値");
+                    Console.WriteLine($"曜日別");
+                    Console.WriteLine($",総数,平均値,中央値");
                     foreach (var item in gpw)
                     {
                         var wtime = item.Select(s => s.waitTime.TotalMilliseconds);
@@ -92,6 +99,24 @@ namespace BloodCTA
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         Console.WriteLine($"{Function.DoWeekName(item.Key)},{item.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
                     }
+
+                    var gph = rowDatas2.GroupBy(g => g.dateTime1.Hour).OrderBy(o => o.Key);
+
+                    Console.WriteLine("");
+                    Console.WriteLine($"時間別");
+                    Console.WriteLine($",総数,平均値,中央値");
+                    foreach (var itemh in gph)
+                    {
+                        var wtime = itemh.Select(s => s.waitTime.TotalMilliseconds);
+                        var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime));
+                        var five = Statistics.FiveNumberSummary(wtime);
+                        var StatMedian = TimeSpan.FromMilliseconds(five[2]);
+                        Console.WriteLine($"{itemh.Key}:00,{itemh.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
+                    }
+
+
+
+
 
                     rowDatas = null;
                     rowDatas2 = null;
