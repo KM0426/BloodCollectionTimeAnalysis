@@ -95,7 +95,6 @@ namespace BloodCTA
                     }
 
                     int defd = 27 - gpd.Count();
-                    Console.WriteLine(defd);
                     if(defd > 0)
                     {
                         for (int i = 0; i < defd; i++)
