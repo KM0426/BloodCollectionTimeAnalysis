@@ -29,7 +29,7 @@ namespace BloodCTA
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 Console.WriteLine("※解析条件");
-                Console.WriteLine("① 採血受付日時(時刻1)と患者認証(時刻2)が日付である事");
+                Console.WriteLine("① 採血受付日時(時刻1)と患者認証(時刻2)の値が日時である事");
                 Console.WriteLine("② 採血受付日時(時刻1)と患者認証(時刻2)が同日である事");
                 Console.WriteLine("③ 患者認証(時刻2)が7時～17時の間");
                 Console.WriteLine("④ 同日中にPIDが重複している場合は、時間が早い方のみ選択");
@@ -72,12 +72,16 @@ namespace BloodCTA
 
 
                     Console.CursorVisible = true;
+                    var medi = TimeSpan.FromMilliseconds(Statistics.FiveNumberSummary(rowDatas.Select(a => a.waitTime.TotalMilliseconds))[2]);
                     var gps = rowDatas.OrderBy(o => o.dateTime1).Where(w => w.dateTime1.Day == w.dateTime2.Day && w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).ToList();
                     var gpd = gps.GroupBy(g => g.dateTime1.Year + "/"+g.dateTime1.Month + "/" + g.dateTime1.Day);
                     Console.WriteLine(" ！！ 解析完了 ！！ " + "{0, 4:d0}%   ", 100);
                     Console.WriteLine("");
-                    Console.WriteLine($"日付別({gpd.First().First().dateTime1.Year}/{gpd.First().First().dateTime1.Month})");
-                    Console.WriteLine($" ,総数,平均値,中央値");
+                    Console.WriteLine("↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*↓*");
+                    Console.WriteLine("");
+                    Console.WriteLine($"日付別({gpd.First().First().dateTime1.Year}/{gpd.First().First().dateTime1.Month})" +
+                        $",待ち時間,0.0104166666666667,0.0625");
+                    Console.WriteLine($" ,件数/日,平均値,中央値(日),中央値(月)");
                     List<RowData> rowDatas2 = new List<RowData>();
                     foreach (var item in gpd)
                     {
@@ -87,38 +91,64 @@ namespace BloodCTA
                         var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime2));
                         var five = Statistics.FiveNumberSummary(wtime2);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
-                        Console.WriteLine($"{item.First().dateTime1.Day}日({Function.DoWeekName(item.First().dateTime1.DayOfWeek)}),{wtime2.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
+                        Console.WriteLine($"{item.First().dateTime1.Day}日({Function.DoWeekName(item.First().dateTime1.DayOfWeek)}),{wtime2.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")},{medi.ToString(@"hh\:mm\:ss")}");
                     }
-                    var gpw = rowDatas2.GroupBy(g=>g.dateTime1.DayOfWeek).OrderBy(o=>o.Key);
-                   
+
+                    int defd = 27 - gpd.Count();
+                    if(defd > 0)
+                    {
+                        for (int i = 0; i < defd; i++)
+                        {
+                            Console.WriteLine("Adjustment Row");
+                        }
+                    }
+
+                    var gpw = rowDatas2.Where(w=> w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).GroupBy(g=>g.dateTime2.DayOfWeek).OrderBy(o=>o.Key);
+                    double tenm = new TimeSpan(0, 10, 0).TotalMilliseconds;
+
                     Console.WriteLine("");
-                    Console.WriteLine($"曜日別({gpw.First().First().dateTime1.Year}/{gpw.First().First().dateTime1.Month})");
-                    Console.WriteLine($" ,総数,平均値,中央値");
+                    Console.WriteLine($"曜日別({gpw.First().First().dateTime1.Year}/{gpw.First().First().dateTime1.Month}),待ち時間,0.00347222222222222");
+                    Console.WriteLine($" ,10分以内(%),10分超え(%),中央値,平均値,件数/日");
                     foreach (var item in gpw)
                     {
+                        var wdgc = item.GroupBy(g => g.dateTime1.Day).Count();
                         var wtime = item.Select(s => s.waitTime.TotalMilliseconds);
                         var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime));
                         var five = Statistics.FiveNumberSummary(wtime);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
-                        Console.WriteLine($"{Function.DoWeekName(item.Key)},{item.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
+                        double tep = ((double)item.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count() / (double)wtime.Count());
+                        Console.WriteLine($"{Function.DoWeekName(item.Key)},{tep},{(1-tep)},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{item.Count()/ wdgc}");
+                    }
+                    int defw = 7 - gpw.Count();
+                    if (defw > 0)
+                    {
+                        for (int i = 0; i < defw; i++)
+                        {
+                            Console.WriteLine("Adjustment Row");
+                        }
                     }
 
-                    var gph = rowDatas2.GroupBy(g => g.dateTime1.Hour).OrderBy(o => o.Key);
+                    var gph = rowDatas2.Where(w => w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).GroupBy(g => g.dateTime2.Hour).OrderBy(o => o.Key);
 
                     Console.WriteLine("");
-                    Console.WriteLine($"時間別({gph.First().First().dateTime1.Year}/{gph.First().First().dateTime1.Month})");
-                    Console.WriteLine($" ,総数,平均値,中央値");
+                    Console.WriteLine($"時間別({gph.First().First().dateTime1.Year}/{gph.First().First().dateTime1.Month}),待ち時間,件数");
+                    Console.WriteLine($" ,10分以内,10分超え,中央値,平均値,件数/時間,10分以内(%)");
+                    
                     foreach (var itemh in gph)
                     {
                         var wtime = itemh.Select(s => s.waitTime.TotalMilliseconds);
                         var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime));
                         var five = Statistics.FiveNumberSummary(wtime);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
-                        Console.WriteLine($"{itemh.Key}:00,{itemh.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")}");
+                        double tep = ((double)itemh.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count() / (double)wtime.Count());
+                        Console.WriteLine($"{itemh.Key}:00,{itemh.Count()*tep},{itemh.Count()*(1-tep)},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{itemh.Count()},{tep}");
                     }
 
                     rowDatas = null;
                     rowDatas2 = null;
+
+                    Console.WriteLine("");
+                    Console.WriteLine("↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*↑*");
 
                     Console.WriteLine("");
                     Console.WriteLine("完了しました、出力をコピーしてExcelに貼り付けてください");
