@@ -58,7 +58,7 @@
     <ApplicationIcon>5fc7355d66f25f87edff0cce426cb704.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>bcta.pfx</AssemblyOriginatorKeyFile>
