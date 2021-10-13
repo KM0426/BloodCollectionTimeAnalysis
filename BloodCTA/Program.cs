@@ -81,7 +81,7 @@ namespace BloodCTA
                     Console.WriteLine("");
                     Console.WriteLine($"日付別({gpd.First().First().dateTime1.Year}/{gpd.First().First().dateTime1.Month})" +
                         $",待ち時間,0.0104166666666667,0.0625");
-                    Console.WriteLine($" ,件数/日,平均値,中央値(日),中央値(月)");
+                    Console.WriteLine($" ,件数/日,中央値(日),平均値,中央値(月)");
                     List<RowData> rowDatas2 = new List<RowData>();
                     foreach (var item in gpd)
                     {
@@ -91,10 +91,11 @@ namespace BloodCTA
                         var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime2));
                         var five = Statistics.FiveNumberSummary(wtime2);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
-                        Console.WriteLine($"{item.First().dateTime1.Day}日({Function.DoWeekName(item.First().dateTime1.DayOfWeek)}),{wtime2.Count()},{StatMean.ToString(@"hh\:mm\:ss")},{StatMedian.ToString(@"hh\:mm\:ss")},{medi.ToString(@"hh\:mm\:ss")}");
+                        Console.WriteLine($"{item.First().dateTime1.Day}日({Function.DoWeekName(item.First().dateTime1.DayOfWeek)}),{wtime2.Count()},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{medi.ToString(@"hh\:mm\:ss")}");
                     }
 
                     int defd = 27 - gpd.Count();
+                    Console.WriteLine(defd);
                     if(defd > 0)
                     {
                         for (int i = 0; i < defd; i++)
