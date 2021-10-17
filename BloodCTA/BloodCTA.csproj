@@ -58,7 +58,7 @@
     <ApplicationIcon>5fc7355d66f25f87edff0cce426cb704.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>
@@ -104,6 +104,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="bcta.pfx" />
     <None Include="ILMerge.props" />
     <None Include="packages.config" />
   </ItemGroup>
