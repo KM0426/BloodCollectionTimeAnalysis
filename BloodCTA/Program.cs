@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using MathNet.Numerics.Statistics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.CompilerServices;
+using BigInteger = System.Numerics.BigInteger;
+using System.Numerics;
+using System.Runtime;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using Complex = System.Numerics.Complex;
 
 namespace BloodCTA
 {
@@ -72,7 +79,7 @@ namespace BloodCTA
 
 
                     Console.CursorVisible = true;
-                    var medi = TimeSpan.FromMilliseconds(Statistics.FiveNumberSummary(rowDatas.Select(a => a.waitTime.TotalMilliseconds))[2]);
+                    var medi = TimeSpan.FromMilliseconds(MathA.FiveNumberSummary(rowDatas.Select(a => a.waitTime.TotalMilliseconds))[2]);
                     var gps = rowDatas.OrderBy(o => o.dateTime1).Where(w => w.dateTime1.Day == w.dateTime2.Day && w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).ToList();
                     var gpd = gps.GroupBy(g => g.dateTime1.Year + "/"+g.dateTime1.Month + "/" + g.dateTime1.Day);
                     Console.WriteLine(" ！！ 解析完了 ！！ " + "{0, 4:d0}%   ", 100);
@@ -88,8 +95,8 @@ namespace BloodCTA
                         var wtime = item.GroupBy(g => g.pID).Select(s => s.First()).ToList();
                         rowDatas2.AddRange(wtime);
                         var wtime2 = wtime.Select(s => s.waitTime.TotalMilliseconds);
-                        var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime2));
-                        var five = Statistics.FiveNumberSummary(wtime2);
+                        var StatMean = TimeSpan.FromMilliseconds(MathA.Mean(wtime2));
+                        var five = MathA.FiveNumberSummary(wtime2);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         Console.WriteLine($"{item.First().dateTime1.Day}日({Function.DoWeekName(item.First().dateTime1.DayOfWeek)}),{wtime2.Count()},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{medi.ToString(@"hh\:mm\:ss")}");
                     }
@@ -113,8 +120,8 @@ namespace BloodCTA
                     {
                         var wdgc = item.GroupBy(g => g.dateTime1.Day).Count();
                         var wtime = item.Select(s => s.waitTime.TotalMilliseconds);
-                        var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime));
-                        var five = Statistics.FiveNumberSummary(wtime);
+                        var StatMean = TimeSpan.FromMilliseconds(MathA.Mean(wtime));
+                        var five = MathA.FiveNumberSummary(wtime);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         double tep = ((double)item.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count() / (double)wtime.Count());
                         Console.WriteLine($"{Function.DoWeekName(item.Key)},{tep},{(1-tep)},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{item.Count()/ wdgc}");
@@ -137,8 +144,8 @@ namespace BloodCTA
                     foreach (var itemh in gph)
                     {
                         var wtime = itemh.Select(s => s.waitTime.TotalMilliseconds);
-                        var StatMean = TimeSpan.FromMilliseconds(Statistics.Mean(wtime));
-                        var five = Statistics.FiveNumberSummary(wtime);
+                        var StatMean = TimeSpan.FromMilliseconds(MathA.Mean(wtime));
+                        var five = MathA.FiveNumberSummary(wtime);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         double tep = ((double)itemh.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count() / (double)wtime.Count());
                         Console.WriteLine($"{itemh.Key}:00,{itemh.Count()*tep},{itemh.Count()*(1-tep)},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{itemh.Count()},{tep}");
@@ -172,10 +179,7 @@ namespace BloodCTA
             }
         }
         
-
-
     }
-
     public class RowData
     {
         public double pID;
