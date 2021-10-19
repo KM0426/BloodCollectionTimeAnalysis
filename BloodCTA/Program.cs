@@ -6,7 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MathNet.Numerics.Statistics;
+using System.Runtime.CompilerServices;
+using BigInteger = System.Numerics.BigInteger;
+using System.Numerics;
+using System.Runtime;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using Complex = System.Numerics.Complex;
 
 namespace BloodCTA
 {
