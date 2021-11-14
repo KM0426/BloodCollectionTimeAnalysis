@@ -14,11 +14,30 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using Complex = System.Numerics.Complex;
+using MathNet.Numerics.Statistics;
+using System.Threading;
 
 namespace BloodCTA
 {
     class Program
     {
+        private static void WaitConsole(CancellationToken token)
+        {
+            char[] bars = { '／', '―', '＼', '｜' };
+            int j = 0;
+            while (true)
+            {
+                j++;
+                Console.Write(bars[j % 4]);
+                Console.SetCursorPosition(0, Console.CursorTop);
+                Thread.Sleep(100);
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }               
+                if (j > 100) j = 0;
+            }
+        }
         [STAThread]
         static void Main(string[] args)
         {
@@ -51,9 +70,16 @@ namespace BloodCTA
                     Console.Write(bars[0]);
                     Console.Write("読み込み中..." + "{0, 4:d0}%", 0);
                     Console.SetCursorPosition(0, Console.CursorTop);
+                    var tokenSource = new CancellationTokenSource();
+                    var token = tokenSource.Token;
+                    Task.Run(() => WaitConsole(token));
                     using (XLWorkbook workbook = new XLWorkbook(ofd.FileName))
                     {
+
+                        tokenSource.Cancel();
                         IXLWorksheet worksheet = workbook.Worksheets.Last();
+                        
+
                         int lastRow = worksheet.LastRowUsed().RowNumber();
           
                         for (int i = 2; i <= lastRow; i++)
