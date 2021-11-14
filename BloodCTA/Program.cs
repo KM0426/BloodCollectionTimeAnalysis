@@ -72,11 +72,12 @@ namespace BloodCTA
                     Console.SetCursorPosition(0, Console.CursorTop);
                     var tokenSource = new CancellationTokenSource();
                     var token = tokenSource.Token;
-                    Task.Run(() => WaitConsole(token));
+                    var t = Task.Run(() => WaitConsole(token));
                     using (XLWorkbook workbook = new XLWorkbook(ofd.FileName))
                     {
 
                         tokenSource.Cancel();
+                        t.Wait();
                         IXLWorksheet worksheet = workbook.Worksheets.Last();
                         
 
