@@ -93,8 +93,25 @@ namespace BloodCTA
                             double pid = (double)cell.Value;
                             DateTime dt1;
                             DateTime dt2;
-                            if (!DateTime.TryParse(worksheet.Cell(i, 2).Value.ToString(), out dt1)) continue;
-                            if (!DateTime.TryParse(worksheet.Cell(i, 3).Value.ToString(), out dt2)) continue;
+                            string str1 = worksheet.Cell(i, 2).Value.ToString();
+                            string str2 = worksheet.Cell(i, 3).Value.ToString();
+                            if (double.TryParse(str1, out double OAD1))
+                            {
+                                dt1 = DateTime.FromOADate(OAD1);
+                            }
+                            else
+                            {
+                                if (!DateTime.TryParse(str1, out dt1)) continue;
+                            }
+                            if (double.TryParse(str2, out double OAD2))
+                            {
+                                dt2 = DateTime.FromOADate(OAD1);
+                            }
+                            else
+                            {
+                                if (!DateTime.TryParse(str2, out dt2)) continue;
+                            }                
+                            
                             rowDatas.Add(new RowData() { pID = pid, dateTime1 = dt1, dateTime2 = dt2 });
 
                             cell = null;
@@ -213,7 +230,9 @@ namespace BloodCTA
             }
             else
             {
-                return;
+                Console.WriteLine("キャンセルされました");
+                Console.WriteLine("終了するには何かキーを押してください");
+                Console.ReadLine();
             }
         }
         
