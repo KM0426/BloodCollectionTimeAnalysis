@@ -56,7 +56,9 @@ namespace BloodCTA
                 var str = Console.ReadLine();
                 IsNum = int.TryParse(str, out inputMinutes);
             }
-            Console.WriteLine(inputMinutes + "分で計算します");
+            Console.WriteLine("しきい値："+inputMinutes + "分以内、"+ inputMinutes + "分超え計算します");
+            Console.WriteLine("上記で計算します");
+
             Console.WriteLine("※ファイル要件");
             Console.WriteLine("① エクセルファイルの最終シートを読み込みます");
             Console.WriteLine("② A列：PID、B列：採血受付日時(時刻1)、C列：患者認証(時刻2)");
