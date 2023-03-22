@@ -16,6 +16,7 @@ using System.Runtime.Serialization;
 using Complex = System.Numerics.Complex;
 using MathNet.Numerics.Statistics;
 using System.Threading;
+using System.Diagnostics;
 
 namespace BloodCTA
 {
@@ -47,6 +48,15 @@ namespace BloodCTA
                 + "すべてのファイル (*.*)|*.*";
             ofd.FilterIndex = 2;
             ofd.Multiselect = false;
+            bool IsNum = false;
+            int inputMinutes = 0;
+            while (!IsNum)
+            {
+                Console.WriteLine("しきい値にする時間(分)を整数で入力し、エンターを押して下さい");
+                var str = Console.ReadLine();
+                IsNum = int.TryParse(str, out inputMinutes);
+            }
+            Console.WriteLine(inputMinutes + "分で計算します");
             Console.WriteLine("※ファイル要件");
             Console.WriteLine("① エクセルファイルの最終シートを読み込みます");
             Console.WriteLine("② A列：PID、B列：採血受付日時(時刻1)、C列：患者認証(時刻2)");
@@ -95,6 +105,8 @@ namespace BloodCTA
                             DateTime dt2;
                             string str1 = worksheet.Cell(i, 2).Value.ToString();
                             string str2 = worksheet.Cell(i, 3).Value.ToString();
+
+                            if (str1.Length == 0 || str2.Length == 0) continue;
                             if (double.TryParse(str1, out double OAD1))
                             {
                                 dt1 = DateTime.FromOADate(OAD1);
@@ -105,7 +117,7 @@ namespace BloodCTA
                             }
                             if (double.TryParse(str2, out double OAD2))
                             {
-                                dt2 = DateTime.FromOADate(OAD1);
+                                dt2 = DateTime.FromOADate(OAD2);
                             }
                             else
                             {
@@ -155,11 +167,11 @@ namespace BloodCTA
                     }
 
                     var gpw = rowDatas2.Where(w=> w.dateTime2.Hour >= 7 && w.dateTime2.Hour <= 17).GroupBy(g=>g.dateTime2.DayOfWeek).OrderBy(o=>o.Key);
-                    double tenm = new TimeSpan(0, 11, 0).TotalMilliseconds;
+                    double tenm = new TimeSpan(0, inputMinutes, 0).TotalMilliseconds;
 
                     Console.WriteLine("");
                     Console.WriteLine($"曜日別({gpw.First().First().dateTime1.Year}/{gpw.First().First().dateTime1.Month}),待ち時間,0.00347222222222222");
-                    Console.WriteLine($" ,10分以内(%),10分超え(%),中央値,平均値,件数/日");
+                    Console.WriteLine($" ,"+ inputMinutes + "分以内(%),"+ inputMinutes + "分超え(%),中央値,平均値,件数/日");
                     foreach (var item in gpw)
                     {
                         var wdgc = item.GroupBy(g => g.dateTime1.Day).Count();
@@ -168,6 +180,12 @@ namespace BloodCTA
                         var five = Statistics.FiveNumberSummary(wtime);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         double tep = ((double)item.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count() / (double)wtime.Count());
+                        var tata = item.Where(w => w.waitTime.TotalMilliseconds <= tenm);
+                        foreach (var itemaaa in tata)
+                        {
+                            Debug.WriteLine(itemaaa.pID+" "+ itemaaa.dateTime1 + " " + itemaaa.dateTime2);
+                        }
+
                         Console.WriteLine($"{Function.DoWeekName(item.Key)},{tep},{(1-tep)},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{item.Count()/ wdgc}");
                     }
                     int defw = 7 - gpw.Count();
@@ -183,7 +201,7 @@ namespace BloodCTA
 
                     Console.WriteLine("");
                     Console.WriteLine($"時間別({gph.First().First().dateTime1.Year}/{gph.First().First().dateTime1.Month}),待ち時間,件数");
-                    Console.WriteLine($" ,10分以内,10分超え,中央値,平均値,件数/時間,10分以内(%)");
+                    Console.WriteLine($" ,"+ inputMinutes + "分以内,"+ inputMinutes + "分超え,中央値,平均値,件数/時間,"+ inputMinutes + "分以内(%)");
                     
                     foreach (var itemh in gph)
                     {
@@ -192,19 +210,19 @@ namespace BloodCTA
                         var five = Statistics.FiveNumberSummary(wtime);
                         var StatMedian = TimeSpan.FromMilliseconds(five[2]);
                         double tep = ((double)itemh.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count() / (double)wtime.Count());
+                        if (tep > 0)
+                        {
+                            var tetete = itemh.Where(w => w.waitTime.TotalMilliseconds <= tenm);
+                        }
                         Console.WriteLine($"{itemh.Key}:00,{itemh.Count()*tep},{itemh.Count()*(1-tep)},{StatMedian.ToString(@"hh\:mm\:ss")},{StatMean.ToString(@"hh\:mm\:ss")},{itemh.Count()},{tep}");
                     }
 
                     Console.WriteLine("");
                     Console.WriteLine($"月集計用");
-                    Console.WriteLine($"年月,総件数,10分以内,10分越え,中央値,平均値,10分以内(%)");
-                    Console.WriteLine($"{rowDatas2.First().dateTime1.ToString("yyyyy/M")},{rowDatas2.Count()},{rowDatas2.Where(w=>w.waitTime.TotalMilliseconds <= tenm).Count()}" +
+                    Console.WriteLine($"年月,総件数,"+ inputMinutes + "分以内,"+ inputMinutes + "分越え,中央値,平均値,"+ inputMinutes + "分以内(%)");
+                    Console.WriteLine($"'{rowDatas2.First().dateTime1.ToString("yyyy/M")},{rowDatas2.Count()},{rowDatas2.Where(w=>w.waitTime.TotalMilliseconds <= tenm).Count()}" +
                         $",{rowDatas2.Where(w => w.waitTime.TotalMilliseconds > tenm).Count()},{TimeSpan.FromMilliseconds(Statistics.Median(rowDatas2.Select(s=>s.waitTime.TotalMilliseconds))).ToString(@"hh\:mm\:ss")}," +
                         $"{Statistics.Mean(rowDatas2.Select(s => s.waitTime.TotalMilliseconds))},{(double)rowDatas2.Where(w => w.waitTime.TotalMilliseconds <= tenm).Count()/ (double)rowDatas2.Count()}");
-
-
-
-
 
                     rowDatas = null;
                     rowDatas2 = null;
